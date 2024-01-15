@@ -1,0 +1,53 @@
+version: '3'
+
+services:
+  h2ogpt:
+    image: gcr.io/vorvan/h2oai/h2ogpt-runtime:0.1.0
+    shm_size: 2g
+    environment:
+      - GRADIO_SERVER_PORT=7860
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - TMPDIR=/tmp
+    # entrypoint: sh -c "tail -f /dev/null"
+    entrypoint: "/start.sh"
+    deploy:
+      resources:
+        reservations:
+          devices:
+          - driver: nvidia
+            count: 1
+            capabilities: [gpu]
+    user: "0:0"
+    volumes:
+      - /etc/passwd:/etc/passwd:ro
+      - /etc/group:/etc/group:ro
+      - ./data/.cache:/workspace/.cache
+      - ./data/save:/workspace/save
+      - ./data/user_path:/workspace/user_path
+      - ./data/db_dir_UserData:/workspace/db_dir_UserData
+      - ./data/users:/workspace/users
+      - ./data/db_nonusers:/workspace/db_nonusers
+      - ./data/llamacpp_path:/workspace/llamacpp_path
+      - ./data/h2ogpt_auth:/workspace/h2ogpt_auth
+      - ./:/local-data
+      - "./start.sh:/start.sh"
+      - type: tmpfs
+        target: /tmp
+        tmpfs:
+          size: "12884901888"
+    # init: true
+    # network_mode: host
+    # runtime: nvidia
+    # gpus: all
+    cap_add:
+      - IPC_LOCK
+    ports:
+      - "7860:7860"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7860"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 2m
+
